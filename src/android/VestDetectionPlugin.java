@@ -34,6 +34,18 @@ public class VestDetectionPlugin extends CordovaPlugin {
             });
             return true;
         }
+        if ("test".equals(action)) {
+            JSONObject testResult = new JSONObject();
+            try {
+                testResult.put("message", "Plugin is working");
+                testResult.put("timestamp", System.currentTimeMillis());
+                testResult.put("platform", "Android");
+                callbackContext.success(testResult);
+            } catch (Exception e) {
+                callbackContext.error("Test failed: " + e.getMessage());
+            }
+            return true;
+        }
         if ("detectBase64".equals(action)) {
             if (args == null || args.length() == 0) {
                 callbackContext.error("imageBase64 is required");
@@ -44,6 +56,7 @@ public class VestDetectionPlugin extends CordovaPlugin {
                 StringBuilder debugLog = new StringBuilder();
                 try {
                     debugLog.append("Step 1: Starting detection\n");
+                    debugLog.append("DEBUG: Thread started, base64 length: ").append(b64.length()).append("\n");
                     
                     ensureClassifier(callbackContext);
                     if (classifier == null) {
@@ -113,13 +126,17 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     debugLog.append("Step 8: Final result - Label: '").append(topLabel).append("', Score: ").append(topScore)
                            .append(", Contains 'vest': ").append(vestDetected).append("\n");
 
+                    debugLog.append("Step 9: Creating response payload\n");
+                    
                     JSONObject payload = new JSONObject();
                     payload.put("label", topLabel);
                     payload.put("confidence", (double) topScore);
                     payload.put("vest", vestDetected);
                     payload.put("debugLog", debugLog.toString());
                     payload.put("allClassifications", result.size());
+                    payload.put("testField", "Android callback working");
                     
+                    debugLog.append("Step 10: Sending success response\n");
                     callbackContext.success(payload);
                 } catch (Exception e) {
                     debugLog.append("EXCEPTION: ").append(e.getMessage()).append("\n");

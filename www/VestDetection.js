@@ -6,6 +6,9 @@ var VestDetection = {
   },
   warmup: function(success, error) {
     exec(success, error, 'VestDetection', 'warmup', []);
+  },
+  test: function(success, error) {
+    exec(success, error, 'VestDetection', 'test', []);
   }
 };
 
