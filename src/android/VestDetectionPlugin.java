@@ -41,40 +41,84 @@ public class VestDetectionPlugin extends CordovaPlugin {
             }
             final String b64 = args.optString(0, "");
             cordova.getThreadPool().execute(() -> {
+                StringBuilder debugLog = new StringBuilder();
                 try {
+                    debugLog.append("Step 1: Starting detection\n");
+                    
                     ensureClassifier(callbackContext);
-                    if (classifier == null) return; // error already reported
-
-                    byte[] decoded = Base64.decode(b64, Base64.DEFAULT);
-                    Bitmap bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
-                    if (bmp == null) {
-                        callbackContext.error("Unable to decode image");
+                    if (classifier == null) {
+                        debugLog.append("Step 2: FAILED - Classifier is null\n");
+                        JSONObject errorPayload = new JSONObject();
+                        errorPayload.put("error", "Failed to load TensorFlow Lite model");
+                        errorPayload.put("debugLog", debugLog.toString());
+                        callbackContext.error(errorPayload);
                         return;
                     }
+                    debugLog.append("Step 2: SUCCESS - Classifier loaded\n");
+
+                    byte[] decoded = Base64.decode(b64, Base64.DEFAULT);
+                    debugLog.append("Step 3: Base64 decoded, length: ").append(decoded.length).append(" bytes\n");
+                    
+                    Bitmap bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
+                    if (bmp == null) {
+                        debugLog.append("Step 4: FAILED - Unable to decode image\n");
+                        JSONObject errorPayload = new JSONObject();
+                        errorPayload.put("error", "Unable to decode image");
+                        errorPayload.put("debugLog", debugLog.toString());
+                        callbackContext.error(errorPayload);
+                        return;
+                    }
+                    debugLog.append("Step 4: SUCCESS - Image decoded, size: ").append(bmp.getWidth()).append("x").append(bmp.getHeight()).append("\n");
 
                     TensorImage tensorImage = TensorImage.fromBitmap(bmp);
+                    debugLog.append("Step 5: SUCCESS - TensorImage created\n");
+                    
                     List<Classifications> result = classifier.classify(tensorImage);
+                    debugLog.append("Step 6: SUCCESS - Classification completed, got ").append(result.size()).append(" classification heads\n");
 
                     // Aggregate top category across heads
                     String topLabel = "unknown";
                     float topScore = 0f;
-                    for (Classifications classifications : result) {
+                    debugLog.append("Step 7: Processing classification results:\n");
+                    
+                    for (int i = 0; i < result.size(); i++) {
+                        Classifications classifications = result.get(i);
+                        debugLog.append("  Head ").append(i).append(": ").append(classifications.getCategories().size()).append(" categories\n");
+                        
                         if (classifications.getCategories().isEmpty()) continue;
+                        
+                        for (int j = 0; j < Math.min(classifications.getCategories().size(), 3); j++) {
+                            var category = classifications.getCategories().get(j);
+                            debugLog.append("    Category ").append(j).append(": ").append(category.getLabel())
+                                   .append(" (score: ").append(category.getScore()).append(")\n");
+                        }
+                        
                         var category = classifications.getCategories().get(0);
                         if (category.getScore() > topScore) {
                             topScore = category.getScore();
                             topLabel = category.getLabel();
+                            debugLog.append("  NEW TOP: ").append(topLabel).append(" (score: ").append(topScore).append(")\n");
                         }
                     }
+
+                    boolean vestDetected = topLabel.toLowerCase().contains("vest");
+                    debugLog.append("Step 8: Final result - Label: '").append(topLabel).append("', Score: ").append(topScore)
+                           .append(", Contains 'vest': ").append(vestDetected).append("\n");
 
                     JSONObject payload = new JSONObject();
                     payload.put("label", topLabel);
                     payload.put("confidence", (double) topScore);
-                    // Convenience boolean if model label literally contains 'vest'
-                    payload.put("vest", topLabel.toLowerCase().contains("vest"));
+                    payload.put("vest", vestDetected);
+                    payload.put("debugLog", debugLog.toString());
+                    payload.put("allClassifications", result.size());
+                    
                     callbackContext.success(payload);
                 } catch (Exception e) {
-                    callbackContext.error(e.getMessage());
+                    debugLog.append("EXCEPTION: ").append(e.getMessage()).append("\n");
+                    JSONObject errorPayload = new JSONObject();
+                    errorPayload.put("error", "Detection failed: " + e.getMessage());
+                    errorPayload.put("debugLog", debugLog.toString());
+                    callbackContext.error(errorPayload);
                 }
             });
             return true;
