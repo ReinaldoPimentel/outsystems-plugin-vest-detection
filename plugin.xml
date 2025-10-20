@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="outsystems-plugin-vest-detection" version="1.0.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>OutSystems Vest Detection</name>
+    <description>TensorFlow Lite-based vest detection for OutSystems mobile apps</description>
+    <js-module src="www/VestDetection.js" name="VestDetection">
+        <clobbers target="VestDetection" />
+    </js-module>
+
+    <platform name="android">
+        <framework src="com.google.android.gms:play-services-tflite-java:16.1.0" />
+        <framework src="org.tensorflow:tensorflow-lite:2.12.0" />
+        <framework src="org.tensorflow:tensorflow-lite-task-vision:0.4.3" />
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.CAMERA" />
+        </config-file>
+
+        <resource-file src="src/models/vest_model.tflite" target="app/src/main/assets/vest_model.tflite" />
+
+        <source-file src="src/android/VestDetectionPlugin.java" target-dir="app/src/main/java/com/outsystems/vest" />
+        <source-file src="src/android/ImageUtils.java" target-dir="app/src/main/java/com/outsystems/vest" />
+        <feature name="VestDetection">
+            <param name="android-package" value="com.outsystems.vest.VestDetectionPlugin" />
+        </feature>
+    </platform>
+
+    <platform name="ios">
+        <config-file parent="NSCameraUsageDescription" platform="ios" target="*-Info.plist">
+            <string>Camera access is required for vest detection.</string>
+        </config-file>
+        <framework src="TensorFlowLiteSwift" type="podspec" spec="0.0.1" />
+        <framework src="TensorFlowLiteTaskVision" type="podspec" spec="0.4.3" />
+
+        <resource-file src="src/models/vest_model.tflite" />
+        <header-file src="src/ios/VestDetectionPlugin.h" />
+        <source-file src="src/ios/VestDetectionPlugin.m" />
+        <feature name="VestDetection">
+            <param name="ios-package" value="VestDetectionPlugin" />
+        </feature>
+    </platform>
+</plugin>
+
+
