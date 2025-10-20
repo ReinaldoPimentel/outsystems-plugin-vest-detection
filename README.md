@@ -1,2 +1,17 @@
 # outsystems-plugin-vest-detection
 Vest Detection OutSystems Plugin
+
+
+# Extensability configurations
+{
+    "plugin": {
+        "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+    },
+    "buildConfigurations": {
+        "cordova": {
+            "source": {
+                "npm": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+            }
+        }
+    }
+}
