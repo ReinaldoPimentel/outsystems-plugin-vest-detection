@@ -48,10 +48,14 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     ensureClassifier(callbackContext);
                     if (classifier == null) {
                         debugLog.append("Step 2: FAILED - Classifier is null\n");
-                        JSONObject errorPayload = new JSONObject();
-                        errorPayload.put("error", "Failed to load TensorFlow Lite model");
-                        errorPayload.put("debugLog", debugLog.toString());
-                        callbackContext.error(errorPayload);
+                        try {
+                            JSONObject errorPayload = new JSONObject();
+                            errorPayload.put("error", "Failed to load TensorFlow Lite model");
+                            errorPayload.put("debugLog", debugLog.toString());
+                            callbackContext.error(errorPayload);
+                        } catch (Exception jsonException) {
+                            callbackContext.error("Failed to load TensorFlow Lite model");
+                        }
                         return;
                     }
                     debugLog.append("Step 2: SUCCESS - Classifier loaded\n");
@@ -62,10 +66,14 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     Bitmap bmp = BitmapFactory.decodeByteArray(decoded, 0, decoded.length);
                     if (bmp == null) {
                         debugLog.append("Step 4: FAILED - Unable to decode image\n");
-                        JSONObject errorPayload = new JSONObject();
-                        errorPayload.put("error", "Unable to decode image");
-                        errorPayload.put("debugLog", debugLog.toString());
-                        callbackContext.error(errorPayload);
+                        try {
+                            JSONObject errorPayload = new JSONObject();
+                            errorPayload.put("error", "Unable to decode image");
+                            errorPayload.put("debugLog", debugLog.toString());
+                            callbackContext.error(errorPayload);
+                        } catch (Exception jsonException) {
+                            callbackContext.error("Unable to decode image");
+                        }
                         return;
                     }
                     debugLog.append("Step 4: SUCCESS - Image decoded, size: ").append(bmp.getWidth()).append("x").append(bmp.getHeight()).append("\n");
@@ -115,10 +123,14 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     callbackContext.success(payload);
                 } catch (Exception e) {
                     debugLog.append("EXCEPTION: ").append(e.getMessage()).append("\n");
-                    JSONObject errorPayload = new JSONObject();
-                    errorPayload.put("error", "Detection failed: " + e.getMessage());
-                    errorPayload.put("debugLog", debugLog.toString());
-                    callbackContext.error(errorPayload);
+                    try {
+                        JSONObject errorPayload = new JSONObject();
+                        errorPayload.put("error", "Detection failed: " + e.getMessage());
+                        errorPayload.put("debugLog", debugLog.toString());
+                        callbackContext.error(errorPayload);
+                    } catch (Exception jsonException) {
+                        callbackContext.error("Detection failed: " + e.getMessage());
+                    }
                 }
             });
             return true;
