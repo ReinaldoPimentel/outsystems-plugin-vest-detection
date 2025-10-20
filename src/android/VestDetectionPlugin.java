@@ -18,7 +18,7 @@ import java.util.List;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.task.vision.classifier.Classifications;
 import org.tensorflow.lite.task.vision.classifier.ImageClassifier;
-import org.tensorflow.lite.task.vision.classifier.ImageClassifierResult;
+// Removed ImageClassifierResult import; classify now returns List<Classifications>
 
 public class VestDetectionPlugin extends CordovaPlugin {
     private volatile ImageClassifier classifier;
@@ -53,17 +53,17 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     }
 
                     TensorImage tensorImage = TensorImage.fromBitmap(bmp);
-                    ImageClassifierResult result = classifier.classify(tensorImage);
+                    List<Classifications> result = classifier.classify(tensorImage);
 
                     // Aggregate top category across heads
                     String topLabel = "unknown";
                     float topScore = 0f;
-                    for (Classifications classifications : result.getClassifications()) {
+                    for (Classifications classifications : result) {
                         if (classifications.getCategories().isEmpty()) continue;
                         var category = classifications.getCategories().get(0);
                         if (category.getScore() > topScore) {
                             topScore = category.getScore();
-                            topLabel = category.getCategoryName();
+                            topLabel = category.getLabel();
                         }
                     }
 
