@@ -16,7 +16,7 @@ import java.nio.channels.FileChannel;
 import java.util.List;
 
 import org.tensorflow.lite.support.image.TensorImage;
-import org.tensorflow.lite.task.vision.classifier.Classification;
+import org.tensorflow.lite.task.vision.classifier.Category;
 import org.tensorflow.lite.task.vision.classifier.Classifications;
 import org.tensorflow.lite.task.vision.classifier.ImageClassifier;
 // Removed ImageClassifierResult import; classify now returns List<Classifications>
@@ -110,12 +110,12 @@ public class VestDetectionPlugin extends CordovaPlugin {
                         if (classifications.getCategories().isEmpty()) continue;
                         
                         for (int j = 0; j < Math.min(classifications.getCategories().size(), 3); j++) {
-                            Classification category = classifications.getCategories().get(j);
+                            Category category = classifications.getCategories().get(j);
                             debugLog.append("    Category ").append(j).append(": ").append(category.getLabel())
                                    .append(" (score: ").append(category.getScore()).append(")\n");
                         }
                         
-                        Classification category = classifications.getCategories().get(0);
+                        Category category = classifications.getCategories().get(0);
                         if (category.getScore() > topScore) {
                             topScore = category.getScore();
                             topLabel = category.getLabel();
