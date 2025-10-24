@@ -14,23 +14,33 @@ import java.io.FileInputStream;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.List;
+import java.util.ArrayList;
 
+import org.tensorflow.lite.support.image.ImageProcessor;
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.label.Category;
-import org.tensorflow.lite.support.model.Model;
 import org.tensorflow.lite.Interpreter;
-// Using TensorFlow Lite Support Library instead of Task Vision API
+import org.tensorflow.lite.support.common.FileUtil;
+import org.tensorflow.lite.support.common.ops.NormalizeOp;
+import org.tensorflow.lite.support.image.ops.ResizeOp;
+import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp;
+import org.tensorflow.lite.support.image.ops.Rot90Op;
+// Using TensorFlow Lite Support Library API
 
 public class VestDetectionPlugin extends CordovaPlugin {
-    private volatile ImageClassifier classifier;
+    private volatile Interpreter interpreter;
+    private volatile ImageProcessor imageProcessor;
+    private List<String> labels;
 
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) {
         if ("warmup".equals(action)) {
             cordova.getThreadPool().execute(() -> {
-                ensureClassifier(callbackContext);
-                if (classifier != null) {
-                    callbackContext.success();
+                try {
+                    loadModel();
+                    callbackContext.success("Model loaded successfully");
+                } catch (Exception e) {
+                    callbackContext.error("Warmup failed: " + e.getMessage());
                 }
             });
             return true;
@@ -59,20 +69,10 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     debugLog.append("Step 1: Starting detection\n");
                     debugLog.append("DEBUG: Thread started, base64 length: ").append(b64.length()).append("\n");
                     
-                    ensureClassifier(callbackContext);
-                    if (classifier == null) {
-                        debugLog.append("Step 2: FAILED - Classifier is null\n");
-                        try {
-                            JSONObject errorPayload = new JSONObject();
-                            errorPayload.put("error", "Failed to load TensorFlow Lite model");
-                            errorPayload.put("debugLog", debugLog.toString());
-                            callbackContext.error(errorPayload);
-                        } catch (Exception jsonException) {
-                            callbackContext.error("Failed to load TensorFlow Lite model");
-                        }
-                        return;
+                    if (interpreter == null) {
+                        loadModel();
                     }
-                    debugLog.append("Step 2: SUCCESS - Classifier loaded\n");
+                    debugLog.append("Step 2: SUCCESS - Model loaded\n");
 
                     byte[] decoded = Base64.decode(b64, Base64.DEFAULT);
                     debugLog.append("Step 3: Base64 decoded, length: ").append(decoded.length).append(" bytes\n");
@@ -92,37 +92,32 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     }
                     debugLog.append("Step 4: SUCCESS - Image decoded, size: ").append(bmp.getWidth()).append("x").append(bmp.getHeight()).append("\n");
 
-                    TensorImage tensorImage = TensorImage.fromBitmap(bmp);
-                    debugLog.append("Step 5: SUCCESS - TensorImage created\n");
-                    
-                    List<Classifications> result = classifier.classify(tensorImage);
-                    debugLog.append("Step 6: SUCCESS - Classification completed, got ").append(result.size()).append(" classification heads\n");
+                    // Process image using Support Library
+                    TensorImage tensorImage = new TensorImage();
+                    tensorImage.load(bmp);
+                    TensorImage processedImage = imageProcessor.process(tensorImage);
+                    debugLog.append("Step 5: SUCCESS - Image processed\n");
 
-                    // Aggregate top category across heads
-                    String topLabel = "unknown";
-                    float topScore = 0f;
-                    debugLog.append("Step 7: Processing classification results:\n");
-                    
-                    for (int i = 0; i < result.size(); i++) {
-                        Classifications classifications = result.get(i);
-                        debugLog.append("  Head ").append(i).append(": ").append(classifications.getCategories().size()).append(" categories\n");
-                        
-                        if (classifications.getCategories().isEmpty()) continue;
-                        
-                        for (int j = 0; j < Math.min(classifications.getCategories().size(), 3); j++) {
-                            Category category = classifications.getCategories().get(j);
-                            debugLog.append("    Category ").append(j).append(": ").append(category.getLabel())
-                                   .append(" (score: ").append(category.getScore()).append(")\n");
-                        }
-                        
-                        Category category = classifications.getCategories().get(0);
-                        if (category.getScore() > topScore) {
-                            topScore = category.getScore();
-                            topLabel = category.getLabel();
-                            debugLog.append("  NEW TOP: ").append(topLabel).append(" (score: ").append(topScore).append(")\n");
-                        }
+                    // Run inference
+                    float[][] output = new float[1][labels.size()];
+                    interpreter.run(processedImage.getBuffer(), output);
+                    debugLog.append("Step 6: SUCCESS - Inference completed\n");
+
+                    // Process results
+                    List<Category> categories = new ArrayList<>();
+                    for (int i = 0; i < labels.size(); i++) {
+                        categories.add(new Category(labels.get(i), output[0][i]));
                     }
+                    
+                    // Sort by confidence score
+                    categories.sort((a, b) -> Float.compare(b.getScore(), a.getScore()));
+                    
+                    debugLog.append("Step 7: SUCCESS - Results processed\n");
+                    debugLog.append("Top result: ").append(categories.get(0).getLabel())
+                           .append(" (score: ").append(categories.get(0).getScore()).append(")\n");
 
+                    String topLabel = categories.get(0).getLabel();
+                    float topScore = categories.get(0).getScore();
                     boolean vestDetected = topLabel.toLowerCase().contains("vest");
                     debugLog.append("Step 8: Final result - Label: '").append(topLabel).append("', Score: ").append(topScore)
                            .append(", Contains 'vest': ").append(vestDetected).append("\n");
@@ -156,20 +151,31 @@ public class VestDetectionPlugin extends CordovaPlugin {
         return false;
     }
 
-    private synchronized void ensureClassifier(CallbackContext callbackContext) {
-        if (classifier != null) return;
-        try {
-            ImageClassifier.ImageClassifierOptions options = ImageClassifier.ImageClassifierOptions.builder()
-                    .setMaxResults(3)
-                    .build();
-            classifier = ImageClassifier.createFromFileAndOptions(
-                    cordova.getContext(),
-                    "vest_model.tflite",
-                    options
-            );
-        } catch (Exception e) {
-            callbackContext.error("Failed to load model: " + e.getMessage());
-        }
+    private synchronized void loadModel() throws Exception {
+        if (interpreter != null) return;
+        
+        // Load model
+        MappedByteBuffer modelBuffer = loadModelFile("vest_model.tflite");
+        Interpreter.Options options = new Interpreter.Options();
+        interpreter = new Interpreter(modelBuffer, options);
+        
+        // Load labels (assuming labels.txt exists in assets)
+        labels = FileUtil.loadLabels(cordova.getContext(), "labels.txt");
+        
+        // Create image processor
+        imageProcessor = new ImageProcessor.Builder()
+                .add(new ResizeWithCropOrPadOp(224, 224))
+                .add(new NormalizeOp(127.5f, 127.5f))
+                .build();
+    }
+    
+    private MappedByteBuffer loadModelFile(String modelPath) throws Exception {
+        AssetFileDescriptor fileDescriptor = cordova.getContext().getAssets().openFd(modelPath);
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 }
 
