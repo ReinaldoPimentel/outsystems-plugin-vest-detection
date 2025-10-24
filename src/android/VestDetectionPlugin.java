@@ -16,10 +16,10 @@ import java.nio.channels.FileChannel;
 import java.util.List;
 
 import org.tensorflow.lite.support.image.TensorImage;
-import org.tensorflow.lite.task.vision.classifier.Category;
-import org.tensorflow.lite.task.vision.classifier.Classifications;
-import org.tensorflow.lite.task.vision.classifier.ImageClassifier;
-// Removed ImageClassifierResult import; classify now returns List<Classifications>
+import org.tensorflow.lite.support.label.Category;
+import org.tensorflow.lite.support.model.Model;
+import org.tensorflow.lite.Interpreter;
+// Using TensorFlow Lite Support Library instead of Task Vision API
 
 public class VestDetectionPlugin extends CordovaPlugin {
     private volatile ImageClassifier classifier;
