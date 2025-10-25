@@ -1,0 +1,31 @@
+{
+  "name": "outsystems-plugin-vest-detection",
+  "version": "1.0.0",
+  "description": "TensorFlow Lite-based vest detection for OutSystems mobile apps",
+  "cordova": {
+    "id": "outsystems-plugin-vest-detection",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "keywords": [
+    "ecosystem:cordova",
+    "cordova-android",
+    "cordova-ios",
+    "tensorflow",
+    "tensorflow-lite",
+    "vest-detection",
+    "ai",
+    "machine-learning"
+  ],
+  "author": "João Sousa - Accelerated Focus",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git"
+  },
+  "engines": {
+    "cordova": ">=9.0.0"
+  }
+}
