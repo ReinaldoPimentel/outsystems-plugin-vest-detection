@@ -157,15 +157,15 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     
                     debugLog.append("Step 10: Sending success response\n");
                     callbackContext.success(payload);
-                } catch (Exception e) {
-                    debugLog.append("EXCEPTION: ").append(e.getMessage()).append("\n");
+                } catch (Throwable t) {
+                    debugLog.append("EXCEPTION: ").append(t.getMessage()).append("\n");
                     try {
                         JSONObject errorPayload = new JSONObject();
-                        errorPayload.put("error", "Detection failed: " + e.getMessage());
+                        errorPayload.put("error", t.getClass().getName() + ": " + String.valueOf(t.getMessage()));
                         errorPayload.put("debugLog", debugLog.toString());
                         callbackContext.error(errorPayload);
-                    } catch (Exception jsonException) {
-                        callbackContext.error("Detection failed: " + e.getMessage());
+                    } catch (Exception swallow) {
+                        callbackContext.error(t.getClass().getName() + ": " + String.valueOf(t.getMessage()));
                     }
                 }
             });
@@ -177,13 +177,14 @@ public class VestDetectionPlugin extends CordovaPlugin {
     private synchronized void loadModel() throws Exception {
         if (interpreter != null) return;
         
-        // Load model
-        MappedByteBuffer modelBuffer = loadModelFile("vest_model.tflite");
-        Interpreter.Options options = new Interpreter.Options();
-        interpreter = new Interpreter(modelBuffer, options);
-        
-        // Load labels (assuming labels.txt exists in assets)
         try {
+        
+            // Load model
+            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(cordova.getContext(), "vest_model.tflite");
+            Interpreter.Options options = new Interpreter.Options();
+            interpreter = new Interpreter(modelBuffer, options);
+        
+            // Load labels (assuming labels.txt exists in assets)
             labels = FileUtil.loadLabels(cordova.getContext(), "labels.txt");
             if (labels == null || labels.isEmpty()) {
                 throw new Exception("Labels file is empty or could not be loaded");
