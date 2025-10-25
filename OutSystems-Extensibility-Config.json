@@ -1,0 +1,79 @@
+{
+  "plugin": {
+    "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+  },
+  "buildConfigurations": {
+    "cordova": {
+      "source": {
+        "npm": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+      }
+    }
+  },
+  "pluginInfo": {
+    "id": "outsystems-plugin-vest-detection",
+    "version": "1.0.0",
+    "name": "OutSystems Vest Detection",
+    "description": "TensorFlow Lite-based vest detection for OutSystems mobile apps",
+    "author": "João Sousa - Accelerated Focus",
+    "platforms": ["android", "ios"]
+  },
+  "android": {
+    "permissions": [
+      "android.permission.CAMERA"
+    ],
+    "frameworks": [
+      "com.google.android.gms:play-services-tflite-java:16.1.0",
+      "org.tensorflow:tensorflow-lite:2.12.0",
+      "org.tensorflow:tensorflow-lite-support:0.4.3"
+    ],
+    "resources": [
+      "vest_model.tflite",
+      "labels.txt"
+    ],
+    "minSdkVersion": 21,
+    "targetSdkVersion": 33,
+    "compileSdkVersion": 33
+  },
+  "ios": {
+    "permissions": [
+      "NSCameraUsageDescription"
+    ],
+    "frameworks": [
+      "TensorFlowLiteSwift",
+      "TensorFlowLiteTaskVision"
+    ],
+    "resources": [
+      "vest_model.tflite"
+    ],
+    "deploymentTarget": "11.0"
+  },
+  "javascript": {
+    "module": "VestDetection",
+    "methods": [
+      {
+        "name": "warmup",
+        "description": "Preload the TensorFlow Lite model for faster detection",
+        "parameters": [],
+        "returns": "Success/Error callback"
+      },
+      {
+        "name": "test",
+        "description": "Test plugin functionality",
+        "parameters": [],
+        "returns": "Test result callback"
+      },
+      {
+        "name": "detectBase64",
+        "description": "Detect vest in base64-encoded image",
+        "parameters": ["imageBase64"],
+        "returns": "Detection result with vest, confidence, label, debugLog"
+      }
+    ]
+  },
+  "usage": {
+    "example": {
+      "description": "Basic vest detection workflow",
+      "code": "VestDetection.detectBase64(imageBase64, function(result) { console.log('Vest detected:', result.vest); }, function(error) { console.error('Error:', error); });"
+    }
+  }
+}
