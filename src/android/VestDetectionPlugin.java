@@ -177,20 +177,37 @@ public class VestDetectionPlugin extends CordovaPlugin {
     private synchronized void loadModel() throws Exception {
         if (interpreter != null) return;
         
-        try {
+        android.util.Log.e("VestDetection", "loadModel: Starting model load");
         
+        try {
+            // Validate assets directory
+            String[] assets = cordova.getContext().getAssets().list("");
+            android.util.Log.d("VestDetection", "Available assets: " + java.util.Arrays.toString(assets));
+            
             // Load model
+            android.util.Log.d("VestDetection", "Loading vest_model.tflite from assets");
             MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(cordova.getContext(), "vest_model.tflite");
+            android.util.Log.d("VestDetection", "Model loaded, buffer size: " + modelBuffer.capacity());
+            
             Interpreter.Options options = new Interpreter.Options();
             interpreter = new Interpreter(modelBuffer, options);
+            android.util.Log.d("VestDetection", "Interpreter created successfully");
         
-            // Load labels (assuming labels.txt exists in assets)
+            // Load labels
+            android.util.Log.d("VestDetection", "Loading labels.txt from assets");
             labels = FileUtil.loadLabels(cordova.getContext(), "labels.txt");
             if (labels == null || labels.isEmpty()) {
+                android.util.Log.e("VestDetection", "Labels file is empty or null");
                 throw new Exception("Labels file is empty or could not be loaded");
             }
+            android.util.Log.d("VestDetection", "Labels loaded: " + labels.size() + " items");
+            for (int i = 0; i < labels.size(); i++) {
+                android.util.Log.d("VestDetection", "Label " + i + ": " + labels.get(i));
+            }
         } catch (Exception e) {
-            throw new Exception("Failed to load labels.txt: " + e.getMessage());
+            android.util.Log.e("VestDetection", "Model loading failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new Exception("Model loading failed: " + e.getMessage());
         }
         
         // Create image processor
@@ -198,6 +215,8 @@ public class VestDetectionPlugin extends CordovaPlugin {
                 .add(new ResizeWithCropOrPadOp(224, 224))
                 .add(new NormalizeOp(127.5f, 127.5f))
                 .build();
+        
+        android.util.Log.d("VestDetection", "Model and processor loaded successfully");
     }
     
     private MappedByteBuffer loadModelFile(String modelPath) throws Exception {
