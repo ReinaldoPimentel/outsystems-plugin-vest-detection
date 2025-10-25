@@ -2,7 +2,31 @@ var exec = require('cordova/exec');
 
 var VestDetection = {
   detectBase64: function(imageBase64, success, error) {
-    exec(success, error, 'VestDetection', 'detectBase64', [imageBase64]);
+    console.log('VestDetection.detectBase64 called with image length:', imageBase64 ? imageBase64.length : 0);
+    
+    // Enhanced logging for debugging
+    console.log('Calling exec with success callback:', typeof success);
+    console.log('Calling exec with error callback:', typeof error);
+    
+    exec(
+      function(result) {
+        console.log('VestDetection.detectBase64 SUCCESS callback received');
+        console.log('Result:', JSON.stringify(result));
+        if (success && typeof success === 'function') {
+          success(result);
+        }
+      },
+      function(error) {
+        console.error('VestDetection.detectBase64 ERROR callback received');
+        console.error('Error:', JSON.stringify(error));
+        if (error && typeof error === 'function') {
+          error(error);
+        }
+      },
+      'VestDetection',
+      'detectBase64',
+      [imageBase64]
+    );
   },
   warmup: function(success, error) {
     exec(success, error, 'VestDetection', 'warmup', []);
