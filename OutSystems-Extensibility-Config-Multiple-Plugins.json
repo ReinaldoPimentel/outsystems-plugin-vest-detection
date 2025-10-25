@@ -1,0 +1,120 @@
+{
+  "extensibilityConfigurations": [
+    {
+      "name": "VestDetection",
+      "pluginId": "outsystems-plugin-vest-detection",
+      "version": "1.0.0",
+      "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main",
+      "platforms": ["android", "ios"],
+      "description": "TensorFlow Lite-based vest detection for OutSystems mobile apps",
+      "author": "João Sousa - Accelerated Focus",
+      "permissions": {
+        "android": [
+          "android.permission.CAMERA"
+        ],
+        "ios": [
+          "NSCameraUsageDescription"
+        ]
+      },
+      "frameworks": {
+        "android": [
+          "com.google.android.gms:play-services-tflite-java:16.1.0",
+          "org.tensorflow:tensorflow-lite:2.12.0",
+          "org.tensorflow:tensorflow-lite-support:0.4.3"
+        ],
+        "ios": [
+          "TensorFlowLiteSwift",
+          "TensorFlowLiteTaskVision"
+        ]
+      },
+      "resources": {
+        "android": [
+          "vest_model.tflite",
+          "labels.txt"
+        ],
+        "ios": [
+          "vest_model.tflite"
+        ]
+      }
+    },
+    {
+      "name": "Camera",
+      "pluginId": "cordova-plugin-camera",
+      "version": "6.0.0",
+      "url": "https://github.com/apache/cordova-plugin-camera.git#6.0.0",
+      "platforms": ["android", "ios"],
+      "description": "Cordova Camera Plugin for capturing photos and videos",
+      "author": "Apache Cordova",
+      "permissions": {
+        "android": [
+          "android.permission.CAMERA",
+          "android.permission.WRITE_EXTERNAL_STORAGE",
+          "android.permission.READ_EXTERNAL_STORAGE"
+        ],
+        "ios": [
+          "NSCameraUsageDescription",
+          "NSPhotoLibraryUsageDescription"
+        ]
+      },
+      "frameworks": {
+        "android": [],
+        "ios": []
+      },
+      "resources": {
+        "android": [],
+        "ios": []
+      }
+    }
+  ],
+  "buildConfigurations": {
+    "cordova": {
+      "source": {
+        "npm": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+      }
+    }
+  },
+  "appPreferences": {
+    "preferences": {
+      "global": [
+        {
+          "name": "orientation",
+          "value": "portrait"
+        }
+      ]
+    }
+  },
+  "buildSettings": {
+    "android": {
+      "minSdkVersion": 21,
+      "targetSdkVersion": 33,
+      "compileSdkVersion": 33
+    },
+    "ios": {
+      "deploymentTarget": "11.0"
+    }
+  },
+  "pluginDependencies": {
+    "vestDetection": {
+      "dependsOn": ["camera"],
+      "description": "Vest Detection plugin requires camera access for image capture"
+    }
+  },
+  "usage": {
+    "workflow": [
+      {
+        "step": 1,
+        "action": "Camera.capturePhoto",
+        "description": "Capture photo using camera plugin"
+      },
+      {
+        "step": 2,
+        "action": "VestDetection.detectBase64",
+        "description": "Analyze captured image for vest detection"
+      }
+    ],
+    "example": {
+      "description": "Complete workflow: Capture photo and detect vest",
+      "code": "// Step 1: Capture photo\nCamera.capturePhoto(function(imageData) {\n    // Step 2: Detect vest in captured image\n    VestDetection.detectBase64(imageData, function(result) {\n        console.log('Vest detected:', result.vest);\n    }, function(error) {\n        console.error('Detection failed:', error);\n    });\n}, function(error) {\n    console.error('Camera failed:', error);\n});"
+    }
+  }
+}

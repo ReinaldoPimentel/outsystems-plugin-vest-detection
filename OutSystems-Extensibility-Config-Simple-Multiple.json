@@ -1,0 +1,25 @@
+{
+  "extensibilityConfigurations": [
+    {
+      "name": "VestDetection",
+      "pluginId": "outsystems-plugin-vest-detection",
+      "version": "1.0.0",
+      "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main",
+      "platforms": ["android", "ios"]
+    },
+    {
+      "name": "Camera",
+      "pluginId": "cordova-plugin-camera",
+      "version": "6.0.0",
+      "url": "https://github.com/apache/cordova-plugin-camera.git#6.0.0",
+      "platforms": ["android", "ios"]
+    }
+  ],
+  "buildConfigurations": {
+    "cordova": {
+      "source": {
+        "npm": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git#main"
+      }
+    }
+  }
+}
