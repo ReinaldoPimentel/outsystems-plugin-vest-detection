@@ -70,9 +70,20 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     debugLog.append("DEBUG: Thread started, base64 length: ").append(b64.length()).append("\n");
                     
                     if (interpreter == null) {
-                        loadModel();
+                        try {
+                            loadModel();
+                            debugLog.append("Step 2: SUCCESS - Model loaded\n");
+                        } catch (Exception modelException) {
+                            debugLog.append("Step 2: FAILED - Model loading error: ").append(modelException.getMessage()).append("\n");
+                            JSONObject errorPayload = new JSONObject();
+                            errorPayload.put("error", "Model loading failed: " + modelException.getMessage());
+                            errorPayload.put("debugLog", debugLog.toString());
+                            callbackContext.error(errorPayload);
+                            return;
+                        }
+                    } else {
+                        debugLog.append("Step 2: SUCCESS - Model already loaded\n");
                     }
-                    debugLog.append("Step 2: SUCCESS - Model loaded\n");
 
                     byte[] decoded = Base64.decode(b64, Base64.DEFAULT);
                     debugLog.append("Step 3: Base64 decoded, length: ").append(decoded.length).append(" bytes\n");
@@ -100,19 +111,31 @@ public class VestDetectionPlugin extends CordovaPlugin {
 
                     // Run inference
                     float[][] output = new float[1][labels.size()];
-                    interpreter.run(processedImage.getBuffer(), output);
-                    debugLog.append("Step 6: SUCCESS - Inference completed\n");
+                    try {
+                        interpreter.run(processedImage.getBuffer(), output);
+                        debugLog.append("Step 6: SUCCESS - Inference completed\n");
+                    } catch (Exception inferenceException) {
+                        debugLog.append("Step 6: FAILED - Inference error: ").append(inferenceException.getMessage()).append("\n");
+                        JSONObject errorPayload = new JSONObject();
+                        errorPayload.put("error", "Inference failed: " + inferenceException.getMessage());
+                        errorPayload.put("debugLog", debugLog.toString());
+                        callbackContext.error(errorPayload);
+                        return;
+                    }
 
                     // Process results
                     List<Category> categories = new ArrayList<>();
                     for (int i = 0; i < labels.size(); i++) {
                         categories.add(new Category(labels.get(i), output[0][i]));
+                        debugLog.append("  Label ").append(i).append(": ").append(labels.get(i))
+                               .append(" (score: ").append(output[0][i]).append(")\n");
                     }
                     
                     // Sort by confidence score
                     categories.sort((a, b) -> Float.compare(b.getScore(), a.getScore()));
                     
                     debugLog.append("Step 7: SUCCESS - Results processed\n");
+                    debugLog.append("Number of categories: ").append(categories.size()).append("\n");
                     debugLog.append("Top result: ").append(categories.get(0).getLabel())
                            .append(" (score: ").append(categories.get(0).getScore()).append(")\n");
 
@@ -160,7 +183,14 @@ public class VestDetectionPlugin extends CordovaPlugin {
         interpreter = new Interpreter(modelBuffer, options);
         
         // Load labels (assuming labels.txt exists in assets)
-        labels = FileUtil.loadLabels(cordova.getContext(), "labels.txt");
+        try {
+            labels = FileUtil.loadLabels(cordova.getContext(), "labels.txt");
+            if (labels == null || labels.isEmpty()) {
+                throw new Exception("Labels file is empty or could not be loaded");
+            }
+        } catch (Exception e) {
+            throw new Exception("Failed to load labels.txt: " + e.getMessage());
+        }
         
         // Create image processor
         imageProcessor = new ImageProcessor.Builder()
