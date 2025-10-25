@@ -395,7 +395,7 @@
                     
                     // Show results
                     showResult('Detection Results', {
-                        'Vest Detected': result.vest ? 'Yes' : 'No',
+                        'Vest Detected': result.vest ? 'Yep' : 'Nop',
                         'Confidence': `${(result.confidence * 100).toFixed(2)}%`,
                         'Label': result.label || 'Unknown',
                         'Categories': result.allClassifications || 0,
