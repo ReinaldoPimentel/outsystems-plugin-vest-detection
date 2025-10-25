@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vest Detection Test App</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .status-box {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+            min-height: 50px;
+        }
+        
+        .result-box {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .error-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .file-input {
+            margin: 20px 0;
+        }
+        
+        .file-input input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .debug-section {
+            margin-top: 20px;
+        }
+        
+        .debug-section details {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .debug-section pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        
+        .image-preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #007bff;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦺 Vest Detection Test App</h1>
+        
+        <div class="button-group">
+            <button id="warmupBtn" onclick="warmupModel()">🔥 Warm Up Model</button>
+            <button id="testBtn" onclick="testPlugin()">🧪 Test Plugin</button>
+            <button id="clearBtn" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+        
+        <div class="file-input">
+            <label for="imageInput"><strong>Select Image:</strong></label>
+            <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
+            <img id="imagePreview" class="image-preview" style="display: none;">
+        </div>
+        
+        <div class="button-group">
+            <button id="detectBtn" onclick="detectVest()" disabled>🔍 Detect Vest</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <div>Processing...</div>
+        </div>
+        
+        <div class="status-box" id="statusBox">
+            <strong>Status:</strong> <span id="status">Ready</span>
+        </div>
+        
+        <div id="resultContainer"></div>
+        
+        <div class="debug-section">
+            <details>
+                <summary><strong>Debug Information</strong></summary>
+                <pre id="debugLog">No debug information available yet.</pre>
+            </details>
+        </div>
+    </div>
+    
+    <script type="text/javascript" src="cordova.js"></script>
+    <script type="text/javascript">
+        // Mock VestDetection plugin for browser testing
+        var VestDetection = {
+            warmup: function(success, error) {
+                console.log('Mock warmup called');
+                setTimeout(function() {
+                    success('Model warmed up successfully (mock)');
+                }, 1000);
+            },
+            test: function(success, error) {
+                console.log('Mock test called');
+                setTimeout(function() {
+                    success('Plugin test successful (mock)');
+                }, 500);
+            },
+            detectBase64: function(imageBase64, success, error) {
+                console.log('Mock detectBase64 called with image length:', imageBase64.length);
+                setTimeout(function() {
+                    var mockResult = {
+                        label: 'vest',
+                        confidence: 0.95,
+                        vest: true,
+                        debugLog: 'Mock detection completed successfully',
+                        allClassifications: 2,
+                        testField: 'Browser mock working'
+                    };
+                    success(mockResult);
+                }, 1500);
+            }
+        };
+        
+        console.log('Mock VestDetection plugin loaded');
+    </script>
+    <script type="text/javascript">
+        let currentImageBase64 = null;
+        
+        // Wait for Cordova to load
+        document.addEventListener('deviceready', onDeviceReady, false);
+        
+        // Check if VestDetection is available
+        function checkVestDetection() {
+            if (typeof VestDetection !== 'undefined') {
+                console.log('VestDetection is available');
+                updateStatus('VestDetection plugin loaded (mock for browser)');
+                
+                // Enable test button
+                document.getElementById('testBtn').disabled = false;
+                document.getElementById('warmupBtn').disabled = false;
+                return true;
+            }
+            return false;
+        }
+        
+        function onDeviceReady() {
+            console.log('Cordova is ready');
+            updateStatus('Cordova ready - Plugin available');
+            
+            // Enable test button
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('warmupBtn').disabled = false;
+        }
+        
+        // Check for VestDetection availability immediately
+        if (!checkVestDetection()) {
+            setTimeout(checkVestDetection, 100);
+        }
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('Status:', message);
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+        
+        function updateDebugLog(message) {
+            const debugElement = document.getElementById('debugLog');
+            debugElement.textContent = message;
+        }
+        
+        function clearResults() {
+            document.getElementById('resultContainer').innerHTML = '';
+            updateDebugLog('Results cleared');
+            updateStatus('Results cleared');
+        }
+        
+        function warmupModel() {
+            if (typeof VestDetection === 'undefined') {
+                updateStatus('❌ VestDetection plugin not loaded');
+                showLoading(false);
+                return;
+            }
+            
+            updateStatus('Warming up model...');
+            showLoading(true);
+            
+            VestDetection.warmup(
+                function(success) {
+                    console.log('✅ Model warmed up successfully:', success);
+                    updateStatus('✅ Model warmed up successfully');
+                    showLoading(false);
+                    
+                    // Enable detect button if image is selected
+                    if (currentImageBase64) {
+                        document.getElementById('detectBtn').disabled = false;
+                    }
+                },
+                function(error) {
+                    console.error('❌ Warmup failed:', error);
+                    updateStatus('❌ Warmup failed');
+                    showLoading(false);
+                    
+                    let errorMessage = 'Warmup failed';
+                    if (typeof error === 'object' && error.error) {
+                        errorMessage = error.error;
+                        if (error.debugLog) {
+                            updateDebugLog(error.debugLog);
+                        }
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    }
+                    
+                    showError('Warmup Error', errorMessage);
+                }
+            );
+        }
+        
+        function testPlugin() {
+            if (typeof VestDetection === 'undefined') {
+                updateStatus('❌ VestDetection plugin not loaded');
+                showLoading(false);
+                return;
+            }
+            
+            updateStatus('Testing plugin...');
+            showLoading(true);
+            
+            VestDetection.test(
+                function(result) {
+                    console.log('✅ Test successful:', result);
+                    updateStatus('✅ Plugin test successful');
+                    showLoading(false);
+                    
+                    showResult('Plugin Test', {
+                        message: result.message || 'Plugin is working',
+                        timestamp: result.timestamp || new Date().toISOString(),
+                        platform: result.platform || 'Unknown'
+                    });
+                },
+                function(error) {
+                    console.error('❌ Test failed:', error);
+                    updateStatus('❌ Plugin test failed');
+                    showLoading(false);
+                    
+                    showError('Test Error', error);
+                }
+            );
+        }
+        
+        function previewImage() {
+            const fileInput = document.getElementById('imageInput');
+            const preview = document.getElementById('imagePreview');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    currentImageBase64 = e.target.result;
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    updateStatus('Image selected - Ready for detection');
+                    document.getElementById('detectBtn').disabled = false;
+                };
+                
+                reader.readAsDataURL(file);
+            } else {
+                currentImageBase64 = null;
+                preview.style.display = 'none';
+                document.getElementById('detectBtn').disabled = true;
+                updateStatus('No image selected');
+            }
+        }
+        
+        function detectVest() {
+            if (!currentImageBase64) {
+                alert('Please select an image first');
+                return;
+            }
+            
+            if (typeof VestDetection === 'undefined') {
+                updateStatus('❌ VestDetection plugin not loaded');
+                showLoading(false);
+                return;
+            }
+            
+            updateStatus('Detecting vest...');
+            showLoading(true);
+            
+            VestDetection.detectBase64(
+                currentImageBase64,
+                function(result) {
+                    console.log('✅ Detection successful:', result);
+                    updateStatus('✅ Detection completed');
+                    showLoading(false);
+                    
+                    // Update debug log
+                    if (result.debugLog) {
+                        updateDebugLog(result.debugLog);
+                    }
+                    
+                    // Show results
+                    showResult('Detection Results', {
+                        'Vest Detected': result.vest ? 'Yes' : 'No',
+                        'Confidence': `${(result.confidence * 100).toFixed(2)}%`,
+                        'Label': result.label || 'Unknown',
+                        'Categories': result.allClassifications || 0,
+                        'Test Field': result.testField || 'N/A'
+                    });
+                },
+                function(error) {
+                    console.error('❌ Detection failed:', error);
+                    updateStatus('❌ Detection failed');
+                    showLoading(false);
+                    
+                    let errorMessage = 'Detection failed';
+                    if (typeof error === 'object' && error.error) {
+                        errorMessage = error.error;
+                        if (error.debugLog) {
+                            updateDebugLog(error.debugLog);
+                        }
+                    } else if (typeof error === 'string') {
+                        errorMessage = error;
+                    }
+                    
+                    showError('Detection Error', errorMessage);
+                }
+            );
+        }
+        
+        function showResult(title, data) {
+            const container = document.getElementById('resultContainer');
+            
+            let html = `<div class="result-box">
+                <h3>${title}</h3>`;
+            
+            for (const [key, value] of Object.entries(data)) {
+                html += `<p><strong>${key}:</strong> ${value}</p>`;
+            }
+            
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+        
+        function showError(title, message) {
+            const container = document.getElementById('resultContainer');
+            
+            const html = `<div class="error-box">
+                <h3>${title}</h3>
+                <p>${message}</p>
+            </div>`;
+            
+            container.innerHTML = html;
+        }
+        
+        // Initialize
+        updateStatus('Waiting for Cordova...');
+    </script>
+</body>
+</html>
