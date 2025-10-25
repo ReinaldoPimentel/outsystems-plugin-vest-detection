@@ -129,7 +129,7 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     payload.put("confidence", (double) topScore);
                     payload.put("vest", vestDetected);
                     payload.put("debugLog", debugLog.toString());
-                    payload.put("allClassifications", result.size());
+                    payload.put("allClassifications", categories.size());
                     payload.put("testField", "Android callback working");
                     
                     debugLog.append("Step 10: Sending success response\n");
