@@ -21,6 +21,9 @@
     "platforms": [
       "android",
       "browser"
-    ]
+    ],
+    "plugins": {
+      "outsystems-plugin-vest-detection": {}
+    }
   }
 }

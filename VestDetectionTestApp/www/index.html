@@ -180,39 +180,7 @@
     </div>
     
     <script type="text/javascript" src="cordova.js"></script>
-    <script type="text/javascript">
-        // Mock VestDetection plugin for browser testing
-        var VestDetection = {
-            warmup: function(success, error) {
-                console.log('Mock warmup called');
-                setTimeout(function() {
-                    success('Model warmed up successfully (mock)');
-                }, 1000);
-            },
-            test: function(success, error) {
-                console.log('Mock test called');
-                setTimeout(function() {
-                    success('Plugin test successful (mock)');
-                }, 500);
-            },
-            detectBase64: function(imageBase64, success, error) {
-                console.log('Mock detectBase64 called with image length:', imageBase64.length);
-                setTimeout(function() {
-                    var mockResult = {
-                        label: 'vest',
-                        confidence: 0.95,
-                        vest: true,
-                        debugLog: 'Mock detection completed successfully',
-                        allClassifications: 2,
-                        testField: 'Browser mock working'
-                    };
-                    success(mockResult);
-                }, 1500);
-            }
-        };
-        
-        console.log('Mock VestDetection plugin loaded');
-    </script>
+    <script type="text/javascript" src="cordova_plugins.js"></script>
     <script type="text/javascript">
         let currentImageBase64 = null;
         
@@ -223,13 +191,14 @@
         function checkVestDetection() {
             if (typeof VestDetection !== 'undefined') {
                 console.log('VestDetection is available');
-                updateStatus('VestDetection plugin loaded (mock for browser)');
+                updateStatus('VestDetection plugin loaded');
                 
                 // Enable test button
                 document.getElementById('testBtn').disabled = false;
                 document.getElementById('warmupBtn').disabled = false;
                 return true;
             }
+            updateStatus('❌ VestDetection plugin not loaded');
             return false;
         }
         
