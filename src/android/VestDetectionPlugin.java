@@ -1,6 +1,5 @@
 package com.outsystems.vest;
 
-import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -10,9 +9,7 @@ import org.apache.cordova.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.FileInputStream;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -22,9 +19,7 @@ import org.tensorflow.lite.support.label.Category;
 import org.tensorflow.lite.Interpreter;
 import org.tensorflow.lite.support.common.FileUtil;
 import org.tensorflow.lite.support.common.ops.NormalizeOp;
-import org.tensorflow.lite.support.image.ops.ResizeOp;
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp;
-import org.tensorflow.lite.support.image.ops.Rot90Op;
 // Using TensorFlow Lite Support Library API
 
 public class VestDetectionPlugin extends CordovaPlugin {
@@ -112,7 +107,8 @@ public class VestDetectionPlugin extends CordovaPlugin {
                     debugLog.append("Step 5: SUCCESS - Image processed\n");
 
                     // Run inference
-                    float[][] output = new float[1][labels.size()];
+                    // Model outputs [1, 1] - a single probability value
+                    float[][] output = new float[1][1];
                     try {
                         interpreter.run(processedImage.getBuffer(), output);
                         debugLog.append("Step 6: SUCCESS - Inference completed\n");
@@ -125,13 +121,16 @@ public class VestDetectionPlugin extends CordovaPlugin {
                         return;
                     }
 
-                    // Process results
+                    // Process results - model outputs single probability value
+                    float vestProbability = output[0][0];
+                    float noVestProbability = 1.0f - vestProbability;
+                    
                     List<Category> categories = new ArrayList<>();
-                    for (int i = 0; i < labels.size(); i++) {
-                        categories.add(new Category(labels.get(i), output[0][i]));
-                        debugLog.append("  Label ").append(i).append(": ").append(labels.get(i))
-                               .append(" (score: ").append(output[0][i]).append(")\n");
-                    }
+                    categories.add(new Category("no_vest", noVestProbability));
+                    categories.add(new Category("vest", vestProbability));
+                    
+                    debugLog.append("  Label 0: no_vest (score: ").append(noVestProbability).append(")\n");
+                    debugLog.append("  Label 1: vest (score: ").append(vestProbability).append(")\n");
                     
                     // Sort by confidence score
                     categories.sort((a, b) -> Float.compare(b.getScore(), a.getScore()));
@@ -219,15 +218,6 @@ public class VestDetectionPlugin extends CordovaPlugin {
                 .build();
         
         android.util.Log.d("VestDetection", "Model and processor loaded successfully");
-    }
-    
-    private MappedByteBuffer loadModelFile(String modelPath) throws Exception {
-        AssetFileDescriptor fileDescriptor = cordova.getContext().getAssets().openFd(modelPath);
-        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-        FileChannel fileChannel = inputStream.getChannel();
-        long startOffset = fileDescriptor.getStartOffset();
-        long declaredLength = fileDescriptor.getDeclaredLength();
-        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 }
 

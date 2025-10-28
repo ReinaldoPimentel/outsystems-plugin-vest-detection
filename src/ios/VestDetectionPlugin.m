@@ -74,24 +74,47 @@
 
         NSString* topLabel = @"unknown";
         float topScore = 0.0f;
+        float noVestScore = 0.0f;
+        float vestScore = 0.0f;
+        
         [debugLog appendString:@"Step 6: Processing classification results:\n"];
         
+        // Model outputs [1,1] - a single probability value
+        // TaskVision may not handle this correctly, so we need to process it manually
         for (NSUInteger i = 0; i < result.classifications.count; i++) {
             TFLClassifications* head = result.classifications[i];
             [debugLog appendFormat:@"  Head %lu: %lu categories\n", (unsigned long)i, (unsigned long)head.categories.count];
             
             if (head.categories.count == 0) continue;
             
-            for (NSUInteger j = 0; j < MIN(head.categories.count, 3); j++) {
-                TFLCategorizationCategory* cat = head.categories[j];
-                [debugLog appendFormat:@"    Category %lu: %@ (score: %.3f)\n", (unsigned long)j, cat.categoryName, cat.score];
-            }
-            
-            TFLCategorizationCategory* cat = head.categories[0];
-            if (cat.score > topScore) {
-                topScore = cat.score;
-                topLabel = cat.categoryName;
-                [debugLog appendFormat:@"  NEW TOP: %@ (score: %.3f)\n", topLabel, topScore];
+            // Handle binary classification output [1,1]
+            // If only one category is returned, it's likely the vest probability
+            if (head.categories.count == 1) {
+                TFLCategorizationCategory* cat = head.categories[0];
+                vestScore = cat.score;
+                noVestScore = 1.0f - vestScore;
+                [debugLog appendFormat:@"    Binary output detected - Vest: %.3f, No-vest: %.3f\n", vestScore, noVestScore];
+                
+                if (vestScore > noVestScore) {
+                    topLabel = @"vest";
+                    topScore = vestScore;
+                } else {
+                    topLabel = @"no_vest";
+                    topScore = noVestScore;
+                }
+            } else {
+                // Multiple categories - process normally
+                for (NSUInteger j = 0; j < MIN(head.categories.count, 3); j++) {
+                    TFLCategorizationCategory* cat = head.categories[j];
+                    [debugLog appendFormat:@"    Category %lu: %@ (score: %.3f)\n", (unsigned long)j, cat.categoryName, cat.score];
+                }
+                
+                TFLCategorizationCategory* cat = head.categories[0];
+                if (cat.score > topScore) {
+                    topScore = cat.score;
+                    topLabel = cat.categoryName;
+                    [debugLog appendFormat:@"  NEW TOP: %@ (score: %.3f)\n", topLabel, topScore];
+                }
             }
         }
 

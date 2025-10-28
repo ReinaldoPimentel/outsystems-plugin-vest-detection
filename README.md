@@ -85,6 +85,8 @@ Download or clone this repository and reference it locally.
 - Cordova 9.0+
 - Android API 24+ (Android 7.0+)
 - iOS 12.0+
+- TensorFlow Lite 2.14.0 (Android)
+- TensorFlow Lite TaskVision 2.14.0 (iOS)
 
 ## API Reference
 

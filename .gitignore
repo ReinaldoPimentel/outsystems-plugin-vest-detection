@@ -26,3 +26,8 @@ node_modules/
 
 # OS
 Thumbs.db
+
+# Large binary files - TensorFlow Lite models
+# NOTE: Model files must be distributed separately or via releases
+*.tflite
+*.pb
