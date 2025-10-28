@@ -20,6 +20,7 @@
         <source-file src="src/android/VestDetectionPlugin.java" target-dir="app/src/main/java/com/outsystems/vest" />
         <feature name="VestDetection">
             <param name="android-package" value="com.outsystems.vest.VestDetectionPlugin" />
+            <param name="onload" value="true" />
         </feature>
     </platform>
 
