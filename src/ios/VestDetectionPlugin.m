@@ -15,6 +15,14 @@
     }];
 }
 
+- (void)test:(CDVInvokedUrlCommand*)command {
+    NSDictionary* testResult = @{ @"message": @"Plugin is working",
+                                   @"timestamp": @([[NSDate date] timeIntervalSince1970]),
+                                   @"platform": @"iOS" };
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:testResult];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
 - (void)detectBase64:(CDVInvokedUrlCommand*)command {
     if (command.arguments.count == 0) {
         CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"imageBase64 is required"];
