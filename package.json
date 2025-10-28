@@ -23,7 +23,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/js7vensousa/outsystems-plugin-vest-detection.git"
+    "url": "https://github.com/ReinaldoPimentel/outsystems-plugin-vest-detection.git"
   },
   "engines": {
     "cordova": ">=9.0.0"

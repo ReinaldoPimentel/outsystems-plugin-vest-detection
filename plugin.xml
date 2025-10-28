@@ -18,6 +18,7 @@
         <resource-file src="src/models/labels.txt" target="app/src/main/assets/labels.txt" />
 
         <source-file src="src/android/VestDetectionPlugin.java" target-dir="app/src/main/java/com/outsystems/vest" />
+        <source-file src="src/android/ImageUtils.java" target-dir="app/src/main/java/com/outsystems/vest" />
         <feature name="VestDetection">
             <param name="android-package" value="com.outsystems.vest.VestDetectionPlugin" />
         </feature>
