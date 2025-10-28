@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<plugin id="outsystems-plugin-vest-detection" version="1.0.0" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+<plugin id="outsystems-plugin-vest-detection" version="1.0.1" xmlns="http://apache.org/cordova/ns/plugins/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
     <name>OutSystems Vest Detection</name>
     <description>TensorFlow Lite-based vest detection for OutSystems mobile apps</description>
     <js-module src="www/VestDetection.js" name="VestDetection">

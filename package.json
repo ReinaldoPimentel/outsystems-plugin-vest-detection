@@ -1,6 +1,6 @@
 {
   "name": "outsystems-plugin-vest-detection",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TensorFlow Lite-based vest detection for OutSystems mobile apps",
   "cordova": {
     "id": "outsystems-plugin-vest-detection",
